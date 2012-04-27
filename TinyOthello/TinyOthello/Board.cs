@@ -185,7 +185,7 @@ namespace TinyOthello {
 			//return diff * Constants.HighestScore;
 		}
 
-		private int Diff(int color) {
+		public int Diff(int color) {
 			var diff = this.Count(c => c.Type == StoneType.Black) - this.Count(c => c.Type == StoneType.White);
 
 			if (color == StoneType.White) {

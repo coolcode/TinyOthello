@@ -10,7 +10,7 @@ namespace TinyOthello.Platform {
 	class Program {
 		static void Main(string[] args) {
 			//BoardTest();
-			GameTest();
+			 GameTest();
 			//Engine_Test();
 			//FightTest();
 			//Board_DefaultCtro_Test();
@@ -19,10 +19,23 @@ namespace TinyOthello.Platform {
 			//NeuralLearning_Test();
 			//LoadNetwork_Test();
 			//CalDelta_Test();
-			//NeuralEngine_Test("□○●□□○●□□○●□□□□□",13);
+
+			//foreach (var s in new[]{
+			//    "□□□□□●○□●●●□□□□□", 
+			//    "□○●□□○●□□○●□□□□□",
+			//    "□□□□□●○□●○●□○□□□"}) {
+			//    NeuralEngine_Test(s, 13);
+			//}
+
+			//CreateKnowledge_Test();
 
 			Console.WriteLine("press any keys to exit...");
 			Console.Read();
+		}
+
+		private static void CreateKnowledge_Test() {
+			var know = new NeuralLearning();
+			know.CreateKnowledge();
 		}
 
 		private static void CalDelta_Test() {
@@ -41,10 +54,10 @@ namespace TinyOthello.Platform {
 		}
 
 		private static void GenKnowledge_Test() {
-			var know = new Knowledge(1000000);
+			var know = new Knowledge(1000000, Math.Min((Constants.StoneCount - 4) / 2, 20), 6);
 			know.Generate();
 		}
-		 
+
 		private static void Engine_Test() {
 			var boardTexts = new string[] { 
 				"□○○○□●●●●●○□□□○□",
@@ -71,12 +84,12 @@ namespace TinyOthello.Platform {
 			var engines = new IEngine[] { new EndGameEngine(), new EndGameEngine() }; //new CoolEngine(),new RandomEngine("Bar")
 			var boardText = "□○○○○●●●●○●□□□○●";//"□○○○□●●●●●○□□□○□";//"□○○○□●○○●●●○□□○●";
 			var targetPath = Path.Combine(Environment.CurrentDirectory, "fight-results");
-			game.Fight(engines[0], engines[1], targetPath,new Board(boardText), StoneType.White);
+			game.Fight(engines[0], engines[1], targetPath, new Board(boardText), StoneType.White);
 		}
 
 		static void GameTest() {
 			IGame game = new Game();
-			var engines = new IEngine[] { new EndGameEngine(), new NeuralEngine("4-6-2012-04-24.net"), new RandomEngine("Foo") }; // new RandomEngine("Bar")
+			var engines = new IEngine[] { new EndGameEngine(), new NeuralEngine(), new RandomEngine("Foo") }; // new RandomEngine("Bar")
 			game.Run(engines);
 		}
 
@@ -91,7 +104,7 @@ namespace TinyOthello.Platform {
 		}
 
 		static void Board_DefaultCtro_Test() {
-			Board borad = new Board(); 
+			Board borad = new Board();
 			Console.WriteLine(borad);
 		}
 
@@ -100,20 +113,22 @@ namespace TinyOthello.Platform {
 			var board = new Board(boardText);
 			var searchResult = engine.Search(board, StoneType.Black, 16);
 			Console.WriteLine("Best Move Act:{0},Exp:{1} | Score Act:{2}, {3}",
-				searchResult.Move, bestMove, searchResult.Score/ Constants.HighestScore, searchResult.Message);
+				searchResult.Move, bestMove, searchResult.Score / Constants.HighestScore, searchResult.Message);
 
 		}
 
 		static void NeuralEngine_Test(string boardText, int bestMove) {
 			IEngine engine = new EndGameEngine();
 			var board = new Board(boardText);
-			var searchResult = engine.Search(board.Copy(), StoneType.Black, 16);
+			var color = board.EmptyCount % 2 == 1 ? StoneType.White : StoneType.Black;
+
+			var searchResult = engine.Search(board.Copy(), color, 16);
 			Console.WriteLine("EndGameEngine Best Move Act:{0},Exp:{1} | Score Act:{2}, {3}, Nodes:{4}, Times:{5}",
-				searchResult.Move, bestMove, searchResult.Score/ Constants.HighestScore, searchResult.Message,
+				searchResult.Move, bestMove, searchResult.Score / Constants.HighestScore, searchResult.Message,
 				searchResult.Nodes, searchResult.TimeSpan);
 
-			engine = new NeuralEngine("4-6-2012-04-24.net");
-			searchResult = engine.Search(board.Copy(), StoneType.Black, (Constants.StoneCount - 4) / 2);
+			engine = new NeuralEngine();//"4-6-2012-04-24.net"
+			searchResult = engine.Search(board.Copy(), color, 4);// (Constants.StoneCount - 4) / 2
 			Console.WriteLine("NeuralEngine Best Move Act:{0},Exp:{1} | Score Act:{2}, {3}, Nodes:{4}, Times:{5}",
 				searchResult.Move, bestMove, searchResult.Score, searchResult.Message,
 				searchResult.Nodes, searchResult.TimeSpan);
