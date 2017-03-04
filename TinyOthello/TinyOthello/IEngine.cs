@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace TinyOthello {
 	public interface IEngine {
@@ -12,6 +13,7 @@ namespace TinyOthello {
 		public string Message { get; set; }
 		public TimeSpan TimeSpan { get; set; }
 		public int Nodes { get; set; }
+        public List<EvalItem> EvalList { get; set; } = new List<EvalItem>();
 
 		public SearchResult() {
 			Message = string.Empty;
@@ -27,4 +29,10 @@ namespace TinyOthello {
 								 Nodes/ (TimeSpan.TotalSeconds + 0.000001));
 		}
 	}
+
+    public class EvalItem
+    {
+        public int Move { get; set; }
+        public int Score { get; set; }
+    }
 }

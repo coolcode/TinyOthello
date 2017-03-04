@@ -32,7 +32,14 @@ namespace TinyOthello.Engines {
 				depth = 2;
 			}
 
-			return base.Search(board, color, depth);
+			var currentResult =  base.Search(board, color, depth);
+
+            var endGameEngine = new EndGameEngine();
+            var perfectResult = endGameEngine.Search(board, color, 12);
+
+            //currentResult.EvalList
+
+            return currentResult;
 		}
 
 		protected override int Eval(Board board, int color) {
@@ -45,7 +52,6 @@ namespace TinyOthello.Engines {
 			var eval = (output[0] * 2 * Constants.StoneCount - Constants.StoneCount);
 
 			return (int)(color == StoneType.Black ? eval : -eval);
-
 		}
 
 		protected override int EndEval(Board board, int color) {

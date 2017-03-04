@@ -12,28 +12,30 @@ namespace TinyOthello.Learning {
 
 		public void CreateKnowledge() {
 
-			//int endGameDepth = Math.Min((Constants.StoneCount - 4) / 2, 20);
+            int endGameDepth = Constants.MaxEndGameDepth;
 
 			int initialCount = 6;
-			int leftEmpthCount = initialCount;
+            //剩下多少个空位就开始求解得分
+            int leftEmpthCount = initialCount;
+            int totalEmptyCount = Constants.StoneCount - 4;
 
-			while (leftEmpthCount <= Constants.StoneCount - 4) {
+            while (leftEmpthCount <= totalEmptyCount) {
 
 				string knowFile = string.Format("{0}-{1}-{2:yyyy-MM-dd}.know",
 											Constants.Line,
 											leftEmpthCount,
 											DateTime.Now);
-				IEngine engine;
+				/*IEngine engine;
 				if(leftEmpthCount > initialCount+1  ) {
 					 engine = new NeuralEngine();
 				}
 				else {
 					engine = new EndGameEngine();
-				}
+				}*/
 
-				var know = new Knowledge(1000000, leftEmpthCount, leftEmpthCount > initialCount+1 ? 2 : 12);
-				know.Engine = engine;
-				know.Generate(knowFile);
+				var know = new Knowledge(1000000, leftEmpthCount, endGameDepth);/*leftEmpthCount, leftEmpthCount > initialCount+1 ? 2 :*/
+                                                       //know.Engine = engine;
+                know.Generate(knowFile);
 
 				var networkFile = Learn(knowFile);
 
@@ -53,7 +55,7 @@ namespace TinyOthello.Learning {
 			double error = int.MaxValue;
 
 			int index = 0;
-			while (error > 1.0 && index++ < 5000) {
+			while (error > 0.01 && index++ < 10000) {
 				error = teacher.RunEpoch(data.Item1, data.Item2);
 			}
 
@@ -125,9 +127,10 @@ namespace TinyOthello.Learning {
 		}
 
 		public void CalDelta() {
-			var data = LoadData("4-6-2012-04-24.know");
-			var d1 = calDelta(data, "4-6-2012-04-24.bp.net") / 2300 * 2 * Constants.StoneCount;
-			var d2 = calDelta(data, "4-6-2012-04-24.net") / 2300 * 2 * Constants.StoneCount;
+            var today = DateTime.Today.ToString("yyyy-MM-dd");
+			var data = LoadData($"4-6-{today}.know");
+            var d1 = 0;// calDelta(data, $"4-6-{today}.bp.net") / 2300 * 2 * Constants.StoneCount;
+			var d2 = calDelta(data, $"4-6-{today}.know.net") / 2300 * 2 * Constants.StoneCount;
 			Console.WriteLine("{0}\n{1}", d1, d2);
 		}
 

@@ -41,7 +41,7 @@ namespace TinyOthello {
 			while (i++ < count) {
 				engines.Fight((e1, e2) => {
 					Fight(e1, e2, targetPath, GetDefaultBoard());
-					Fight(e2, e1, targetPath, GetDefaultBoard());
+					//Fight(e2, e1, targetPath, GetDefaultBoard());
 				});
 
 			}
@@ -52,7 +52,7 @@ namespace TinyOthello {
 										  string.Format("{0:yyyy-MM-dd HH-mm} {1}-{2}.txt", DateTime.Now, engineA.Name, engineB.Name));
 
 			using (TextWriter writer = new StreamWriter(targetFile, true)) {
-				Console.SetOut(writer);
+				//Console.SetOut(writer);
 
 				Console.WriteLine("################### Begin #######################");
 				Console.WriteLine("{0} ({2}) vs {1} ({3})", engineA.Name, engineB.Name, "Black", "White");
@@ -66,7 +66,7 @@ namespace TinyOthello {
 				writer.Flush();
 			}
 
-			Console.SetOut(Console.Error);
+			//Console.SetOut(Console.Error);
 		}
 
 
@@ -104,8 +104,10 @@ namespace TinyOthello {
 			Console.WriteLine(board);
 
 			while (true) {
-				//board.CurrentColor = stoneTypes[turn];
-				var searchResult = engines[turn].Search(board.Copy(), stoneTypes[turn], (Constants.StoneCount - 4) / 2);
+                //board.CurrentColor = stoneTypes[turn];
+                var depth = Constants.StoneCount-4;// (Constants.StoneCount - 4) / 2;
+
+                var searchResult = engines[turn].Search(board.Copy(), stoneTypes[turn], depth);
 				Console.WriteLine("[{0}] {1}", engines[turn].Name, searchResult);
 				Console.Out.Flush();
 

@@ -54,6 +54,10 @@
     <None Include="app.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\TinyOthello.Engines.MCTS\TinyOthello.Engines.MCTS.csproj">
+      <Project>{998bec58-75ba-49c9-adb3-4a46281524fb}</Project>
+      <Name>TinyOthello.Engines.MCTS</Name>
+    </ProjectReference>
     <ProjectReference Include="..\TinyOthello.Engines\TinyOthello.Engines.csproj">
       <Project>{7D9D3F7B-6835-4A34-8281-7640362BD50D}</Project>
       <Name>TinyOthello.Engines</Name>

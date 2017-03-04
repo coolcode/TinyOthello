@@ -3,195 +3,271 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace TinyOthello {
-	public class Board : IEnumerable<Stone>, ICloneable {
-		protected Stone[] Stones { get; private set; }
-		private const int stoneCount = Constants.StoneCount;
-		private readonly Rule rule = new Rule();
+namespace TinyOthello
+{
+    public class Board : IEnumerable<Stone>, ICloneable
+    {
+        protected Stone[] Stones { get; private set; }
+        private const int stoneCount = Constants.StoneCount;
+        private readonly Rule rule = new Rule();
 
-		private static readonly int[] Pow = new int[73];
-		//public int CurrentColor { get; set; }
+        private static readonly int[] Pow = new int[73];
 
-		public int EmptyCount { get; private set; }
+        public int EmptyCount { get; private set; }
 
-		static Board() {
-			for (int i = 0; i < Pow.Length; i++) {
-				Pow[i] = i * Constants.HighestScore;
-			}
-		}
+        static Board()
+        {
+            for (int i = 0; i < Pow.Length; i++)
+            {
+                Pow[i] = i * Constants.HighestScore;
+            }
+        }
 
-		public Board() {
-			Initial();
-			EmptyCount = Stones.Count(c => c.Type == StoneType.Empty);
-		}
+        public Board()
+        {
+            Initial();
+            EmptyCount = Stones.Count(c => c.Type == StoneType.Empty);
+        }
 
-		public Board(string boardText)
-			: this(boardText.Select(c => (c == '●' ? StoneType.Black : (c == '○' ? StoneType.White : StoneType.Empty)))) {
-		}
+        public Board(string boardText)
+            : this(boardText.Select(c => (c == '●' ? StoneType.Black : (c == '○' ? StoneType.White : StoneType.Empty))))
+        {
+        }
 
-		public Board(IEnumerable<int> board)
-			: this() {
-			board.ForEach((c, i) => Stones[i].Type = c);
-			EmptyCount = board.Count(c => c == StoneType.Empty);
-		}
+        public Board(IEnumerable<int> board)
+            : this()
+        {
+            board.ForEach((c, i) => Stones[i].Type = c);
+            EmptyCount = board.Count(c => c == StoneType.Empty);
+        }
 
 
-		public Stone this[int index] {
-			get {
-				return Stones[index];
-			}
-			set {
-				Stones[index] = value;
-			}
-		}
+        public Board(long bitboard)
+            : this()
+        {
+            var b = bitboard;
+            for (var i = 0; i < stoneCount; i++)
+            {
+                if ((b & 1) == 1)
+                {
+                    Stones[i].Type = StoneType.White;
+                }
 
-		public Stone this[int row, int col] {
-			get {
-				return Stones[row * Constants.Line + col];
-			}
-			set {
-				Stones[row * Constants.Line + col] = value;
-			}
-		}
+                b = b >> 1;
+            }
 
-		private void Initial() {
-			Stones = new Stone[stoneCount];
-			for (int i = 0; i < stoneCount; i++) {
-				Stones[i] = new Stone {
-					Type = StoneType.Empty,
-					Row = i / Constants.Line,
-					Column = i % Constants.Line,
-					Pos = i
-				};
-			}
+            b = bitboard >> 32;
+            for (var i = 0; i < stoneCount; i++)
+            {
+                if ((b & 1) == 1)
+                {
+                    Stones[i].Type = StoneType.Black;
+                }
 
-			Border = Stones.Where(c => c.IsBorder).ToList();
+                b = b >> 1;
+            }
 
-			for (int i = 0; i < stoneCount; i++) {
-				Stone stone = Stones[i];
-				stone[Direct.Top] = (stone.Row == 0 ? Stone.Dummy : Stones[i - Constants.Line]);
-				stone[Direct.RightTop] = (stone.Row == 0 || stone.Column == Constants.Line - 1 ? Stone.Dummy : Stones[i - Constants.Line + 1]);
-				stone[Direct.Right] = (stone.Column == Constants.Line - 1 ? Stone.Dummy : Stones[i + 1]);
-				stone[Direct.RightBottom] = (stone.Row == Constants.Line - 1 || stone.Column == Constants.Line - 1 ? Stone.Dummy : Stones[i + Constants.Line + 1]);
-				stone[Direct.Bottom] = (stone.Row == Constants.Line - 1 ? Stone.Dummy : Stones[i + Constants.Line]);
-				stone[Direct.LeftBottom] = (stone.Row == Constants.Line - 1 || stone.Column == 0 ? Stone.Dummy : Stones[i + Constants.Line - 1]);
-				stone[Direct.Left] = (stone.Column == 0 ? Stone.Dummy : Stones[i - 1]);
-				stone[Direct.LeftTop] = (stone.Row == 0 || stone.Column == 0 ? Stone.Dummy : Stones[i - Constants.Line - 1]);
-			}
+            EmptyCount = Stones.Count(c => c.Type == StoneType.Empty);
+        }
 
-			int flipsStartIndex = (Constants.Line / 2 - 1) * (Constants.Line + 1);
+        public Stone this[int index]
+        {
+            get
+            {
+                return Stones[index];
+            }
+            set
+            {
+                Stones[index] = value;
+            }
+        }
 
-			Stones[flipsStartIndex].Type = StoneType.Black;
-			Stones[flipsStartIndex + 1].Type = StoneType.White;
-			Stones[flipsStartIndex + Constants.Line].Type = StoneType.White;
-			Stones[flipsStartIndex + Constants.Line + 1].Type = StoneType.Black;
-		}
+        public Stone this[int row, int col]
+        {
+            get
+            {
+                return Stones[row * Constants.Line + col];
+            }
+            set
+            {
+                Stones[row * Constants.Line + col] = value;
+            }
+        }
 
-		public List<Stone> Border { get; private set; }
+        private void Initial()
+        {
+            Stones = new Stone[stoneCount];
+            for (int i = 0; i < stoneCount; i++)
+            {
+                Stones[i] = new Stone
+                {
+                    Type = StoneType.Empty,
+                    Row = i / Constants.Line,
+                    Column = i % Constants.Line,
+                    Pos = i
+                };
+            }
 
-		#region IEnumerable<Stone> Members
+            Border = Stones.Where(c => c.IsBorder).ToList();
 
-		public IEnumerator<Stone> GetEnumerator() {
-			return this.Stones.ToList().GetEnumerator();
-		}
+            for (int i = 0; i < stoneCount; i++)
+            {
+                Stone stone = Stones[i];
+                stone[Direct.Top] = (stone.Row == 0 ? Stone.Dummy : Stones[i - Constants.Line]);
+                stone[Direct.RightTop] = (stone.Row == 0 || stone.Column == Constants.Line - 1 ? Stone.Dummy : Stones[i - Constants.Line + 1]);
+                stone[Direct.Right] = (stone.Column == Constants.Line - 1 ? Stone.Dummy : Stones[i + 1]);
+                stone[Direct.RightBottom] = (stone.Row == Constants.Line - 1 || stone.Column == Constants.Line - 1 ? Stone.Dummy : Stones[i + Constants.Line + 1]);
+                stone[Direct.Bottom] = (stone.Row == Constants.Line - 1 ? Stone.Dummy : Stones[i + Constants.Line]);
+                stone[Direct.LeftBottom] = (stone.Row == Constants.Line - 1 || stone.Column == 0 ? Stone.Dummy : Stones[i + Constants.Line - 1]);
+                stone[Direct.Left] = (stone.Column == 0 ? Stone.Dummy : Stones[i - 1]);
+                stone[Direct.LeftTop] = (stone.Row == 0 || stone.Column == 0 ? Stone.Dummy : Stones[i - Constants.Line - 1]);
+            }
 
-		#endregion
+            int flipsStartIndex = (Constants.Line / 2 - 1) * (Constants.Line + 1);
 
-		#region IEnumerable Members
+            Stones[flipsStartIndex].Type = StoneType.Black;
+            Stones[flipsStartIndex + 1].Type = StoneType.White;
+            Stones[flipsStartIndex + Constants.Line].Type = StoneType.White;
+            Stones[flipsStartIndex + Constants.Line + 1].Type = StoneType.Black;
+        }
 
-		System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
-			return this.GetEnumerator();
-		}
+        public List<Stone> Border { get; private set; }
 
-		#endregion
+        #region IEnumerable<Stone> Members
 
-		#region ICloneable Members
+        public IEnumerator<Stone> GetEnumerator()
+        {
+            return this.Stones.ToList().GetEnumerator();
+        }
 
-		public object Clone() {
-			return Copy();
-		}
+        #endregion
 
-		public Board Copy() {
-			return new Board(this.Select(c => c.Type));
-		}
+        #region IEnumerable Members
 
-		#endregion
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return this.GetEnumerator();
+        }
 
-		public int Count(int color) {
-			return this.Where(c => c.Type == color).Count();
-		}
+        #endregion
 
-		public override string ToString() {
-			Dictionary<int, string> conv = new Dictionary<int, string>();
-			conv.Add(StoneType.Black, "●");
-			conv.Add(StoneType.White, "○");
-			conv.Add(StoneType.Empty, "□");
-			conv.Add(StoneType.Dummy, "×");
-			StringBuilder sb = new StringBuilder();
-			this.ForEach(c => {
-				sb.Append(conv[c.Type]);
-				if (c.Column == Constants.Line - 1) {
-					sb.Append(Environment.NewLine);
-				}
-			});
+        #region ICloneable Members
 
-			return sb.ToString();
-		}
-		/// <summary>
-		/// <example>Sample: □○○○○●●●●○●□□□○●</example>
-		/// </summary>
-		/// <returns></returns>
-		public  string ToFlatString() {
-			return this.ToString().Replace(Environment.NewLine,"");
-		}
+        public object Clone()
+        {
+            return Copy();
+        }
 
-		public int MakeMove(int pos, int color) {
-			int flipCount = rule.DoFlip(this, pos, color);
-			Stones[pos].Type = color;
-			//Stones[pos].Type = this.CurrentColor;
-			//轮换
-			//ChangeColor();
-			EmptyCount--;
-			return flipCount;
-		}
+        public Board Copy()
+        {
+            return new Board(this.Select(c => c.Type));
+        }
 
-		public void Reback(int pos, int flipCount, int color) {
-			rule.UndoFlip(this, flipCount, color);
-			Stones[pos].Type = StoneType.Empty;
-			EmptyCount++;
-			//轮换
-			//ChangeColor();
-		}
+        #endregion
 
-		//private void ChangeColor() {
-		//    int oppColor = 3 ^ this.CurrentColor;
-		//    if (rule.CanFlip(this, oppColor)) {
-		//        this.CurrentColor = oppColor;
-		//    }
-		//}
+        public int Count(int color)
+        {
+            return this.Where(c => c.Type == color).Count();
+        }
 
-		//TODO:收益评估
-		public int Eval(int color) {
-			var eval = Diff(color);
+        public override string ToString()
+        {
+            var conv = new Dictionary<int, string>();
+            conv.Add(StoneType.Black, "●");
+            conv.Add(StoneType.White, "○");
+            conv.Add(StoneType.Empty, "□");
+            conv.Add(StoneType.Dummy, "×");
+            var sb = new StringBuilder();
+            this.ForEach(c =>
+            {
+                sb.Append(conv[c.Type]);
+                if (c.Column == Constants.Line - 1)
+                {
+                    sb.Append(Environment.NewLine);
+                }
+            });
 
-			return eval;
-		}
+            return sb.ToString();
+        }
 
-		//TODO:收盘收益计算
-		public int EndEval(int color) {
-			int diff = Diff(color);
+        public string ToText()
+        {
+            var conv = new Dictionary<int, string>();
+            conv.Add(StoneType.Black, "●");
+            conv.Add(StoneType.White, "○");
+            conv.Add(StoneType.Empty, "□");
+            conv.Add(StoneType.Dummy, "×");
+            var sb = new StringBuilder();
+            this.ForEach(c =>
+            {
+                sb.Append(conv[c.Type]); 
+            });
 
-			return Pow[diff + Constants.StoneCount] - Pow[Constants.StoneCount];
-			//return diff * Constants.HighestScore;
-		}
+            return sb.ToString();
+        }
 
-		public int Diff(int color) {
-			var diff = this.Count(c => c.Type == StoneType.Black) - this.Count(c => c.Type == StoneType.White);
+        /// <summary>
+        /// <example>Sample: □○○○○●●●●○●□□□○●</example>
+        /// </summary>
+        /// <returns></returns>
+        public string ToFlatString()
+        {
+            return this.ToString().Replace(Environment.NewLine, "");
+        }
 
-			if (color == StoneType.White) {
-				diff = -diff;
-			}
-			/*
+        public int MakeMove(int pos, int color)
+        {
+            int flipCount = rule.DoFlip(this, pos, color);
+            Stones[pos].Type = color;
+            //Stones[pos].Type = this.CurrentColor;
+            //轮换
+            //ChangeColor();
+            EmptyCount--;
+            return flipCount;
+        }
+
+        public void Reback(int pos, int flipCount, int color)
+        {
+            rule.UndoFlip(this, flipCount, color);
+            Stones[pos].Type = StoneType.Empty;
+            EmptyCount++;
+            //轮换
+            //ChangeColor();
+        }
+
+        //private void ChangeColor() {
+        //    int oppColor = 3 ^ this.CurrentColor;
+        //    if (rule.CanFlip(this, oppColor)) {
+        //        this.CurrentColor = oppColor;
+        //    }
+        //}
+
+        //TODO:收益评估
+        public int Eval(int color)
+        {
+            var eval = Diff(color);
+
+            return eval;
+        }
+
+        //TODO:收盘收益计算
+        public int EndEval(int color)
+        {
+            int diff = Diff(color);
+
+            return Pow[diff + Constants.StoneCount] - Pow[Constants.StoneCount];
+            //return diff * Constants.HighestScore;
+        }
+
+        public int Diff(int color)
+        {
+            var diff = this.Count(c => c.Type == StoneType.Black) - this.Count(c => c.Type == StoneType.White);
+
+            if (color == StoneType.White)
+            {
+                diff = -diff;
+            }
+            /*
 			int num = EmptyCount + this.Count(c => c.Type == StoneType.Black) + this.Count(c => c.Type == StoneType.White);
 
 			if(num!= Constants.StoneCount)
@@ -200,7 +276,37 @@ namespace TinyOthello {
 			//    diff = -diff;
 			//}
 			 */
-			return diff;
-		}
-	}
+            return diff;
+        }
+
+        public long ToBitBoard()
+        {
+            var black = 0L;
+            var white = 0L;
+
+            for (var i = 0; i < stoneCount; i++)
+            {
+                var stone = Stones[i];
+                if (stone.Type == StoneType.Black)
+                {
+                    black ^= 1 << i;
+                }
+                else if (stone.Type == StoneType.White)
+                {
+                    white ^= 1 << i;
+                }
+            }
+
+            return (black << 32) ^ white;
+        }
+
+        public bool IsGameOver(int color)
+        {
+            var over = (EmptyCount == 0
+                || (!rule.CanFlip(this, color) && !rule.CanFlip(this, color.Opp()))
+                );
+
+            return over;
+        }
+    }
 }

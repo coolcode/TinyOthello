@@ -62,6 +62,8 @@ namespace TinyOthello.Engines {
 				//恢复到上一步
 				board.Reback(pos, flipCount, opp);
 
+                searchResult.EvalList.Add(new EvalItem { Move = pos, Score = eval });
+
 				searchResult.Message += string.Format("({0}:{1})", pos, eval);
 				if (eval > score) {
 					score = eval;
