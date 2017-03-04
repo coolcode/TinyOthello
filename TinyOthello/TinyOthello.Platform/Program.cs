@@ -14,7 +14,7 @@ namespace TinyOthello.Platform {
         static void Main(string[] args)
         {
             //BoardTest();
-             GameTest();
+            // GameTest();
             //SelfFightTest();
             //Engine_Test();
             //FightTest();
@@ -26,15 +26,20 @@ namespace TinyOthello.Platform {
             //CalDelta_Test();
 
             /*
+0222021101101000*/
             foreach (var s in new[]{
+                "0222021101101000",
+                /*
                 "□□□□□●○□●●●□□□□□",
                 "□○●□□○●□□○●□□□□□",
-                "□□□□□●○□●○●□○□□□"})
+                "□□□□□●○□●○●□○□□□"*/
+                })
             {
+                //EndGame_Test(s, 11, color:StoneType.White);
                 //NeuralEngine_Test(s, 13);
-                MCTSEngine_Test(s, 13);
+                MCTSEngine_Test(s, 11, color:StoneType.White);
             }
-            */
+            
             //CreateKnowledge_Test();
             //BitBoard_Test();
 
@@ -136,11 +141,12 @@ namespace TinyOthello.Platform {
             Console.WriteLine(borad);
         }
 
-        static void EndGame_Test(string boardText, int bestMove)
+        static void EndGame_Test(string boardText, int bestMove, int color= StoneType.Black)
         {
             IEngine engine = new EndGameEngine();
             var board = new Board(boardText);
-            var searchResult = engine.Search(board, StoneType.Black, 16);
+            var searchResult = engine.Search(board, color , 16);
+            Console.WriteLine(searchResult);
             Console.WriteLine("Best Move Act:{0},Exp:{1} | Score Act:{2}, {3}",
                 searchResult.Move, bestMove, searchResult.Score / Constants.HighestScore, searchResult.Message);
 
@@ -166,16 +172,17 @@ namespace TinyOthello.Platform {
         }
 
 
-        static void MCTSEngine_Test(string boardText, int bestMove)
+        static void MCTSEngine_Test(string boardText, int bestMove, int color= StoneType.Black)
         {
             IEngine engine = new EndGameEngine();
             var board = new Board(boardText);
-            var color = board.EmptyCount % 2 == 1 ? StoneType.White : StoneType.Black;
+            //var color = board.EmptyCount % 2 == 1 ? StoneType.White : StoneType.Black;
 
             var searchResult = engine.Search(board.Copy(), color, 16);
             Console.WriteLine("EndGameEngine Best Move Act:{0},Exp:{1} | Score Act:{2}, {3}, Nodes:{4}, Times:{5}",
                 searchResult.Move, bestMove, searchResult.Score / Constants.HighestScore, searchResult.Message,
                 searchResult.Nodes, searchResult.TimeSpan);
+            Console.WriteLine();
 
             engine = new MCTSEngine();
             searchResult = engine.Search(board.Copy(), color, 16);

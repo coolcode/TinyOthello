@@ -30,7 +30,7 @@ namespace TinyOthello
         }
 
         public Board(string boardText)
-            : this(boardText.Select(c => (c == '●' ? StoneType.Black : (c == '○' ? StoneType.White : StoneType.Empty))))
+            : this(boardText.Select(c => (c == '●' || c == '1' ? StoneType.Black : (c == '○' || c == '2' ? StoneType.White : StoneType.Empty))))
         {
         }
 
@@ -200,7 +200,7 @@ namespace TinyOthello
             var sb = new StringBuilder();
             this.ForEach(c =>
             {
-                sb.Append(conv[c.Type]); 
+                sb.Append(conv[c.Type]);
             });
 
             return sb.ToString();

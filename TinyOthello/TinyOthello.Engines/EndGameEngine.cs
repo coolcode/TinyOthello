@@ -32,10 +32,6 @@ namespace TinyOthello.Engines {
 				return new SearchResult() { Move = -1 };
 			}
 
-			//if (moves.Count == 1) {
-			//    return new SearchResult() { Move = moves.First().Pos };
-			//}
-
 			for (int i = 0; i < moves.Count; i++) {
 				var pos = moves[i].Pos;
 				//下棋 

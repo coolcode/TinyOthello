@@ -11,8 +11,8 @@ namespace TinyOthello.Engines.MCTS
 
         public override SearchResult Search(Board board, int color, int depth)
         {
-            var endGameEngine = new EndGameEngine();
-            var perfectResult = endGameEngine.Search(board, color, 12);
+            //var endGameEngine = new EndGameEngine();
+            //var perfectResult = endGameEngine.Search(board, color, 12);
 
             var searchResult = new SearchResult();
 
@@ -25,7 +25,7 @@ namespace TinyOthello.Engines.MCTS
 
             searchResult.Move = bm;
             searchResult.Score = 0;
-            searchResult.Message = $"mcts move, [perfect result: {perfectResult}] ";
+            //searchResult.Message = $"mcts move, [perfect result: {perfectResult}] ";
             searchResult.TimeSpan = clock.Elapsed;
 
             return searchResult;
@@ -48,6 +48,8 @@ namespace TinyOthello.Engines.MCTS
                 int value = Rollout(current, color);
                 Update(current, value);
             }
+
+            root.Save($"{DateTime.Now.ToString("yyyy-MM-dd")}.json");// DrawTree();
 
             return BestChildUCB(root, 0).action;
         }
