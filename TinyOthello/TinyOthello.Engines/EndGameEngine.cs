@@ -3,96 +3,124 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace TinyOthello.Engines {
-	public class EndGameEngine : BaseEngine {
-		private const int MaxScore = Constants.HighestScore * 100;
+namespace TinyOthello.Engines
+{
+    public class EndGameEngine : BaseEngine
+    {
+        private const int MaxScore = Constants.HighestScore * 100;
 
 
-		public override SearchResult Search(Board board, int color,int depth) {
-			SearchResult searchResult = new SearchResult();
-			//board.CurrentColor = color;
-			//PrepareToSolve(board);
-			int alpha = -MaxScore - 1;
-			int beta = MaxScore + 1;
-			int opp =  color.Opp();
+        public override SearchResult Search(Board board, int color, int depth)
+        {
+            SearchResult searchResult = new SearchResult();
+            //board.CurrentColor = color;
+            //PrepareToSolve(board);
+            int alpha = -MaxScore - 1;
+            int beta = MaxScore + 1;
+            int opp = color.Opp();
 
-			Clock clock = new Clock();
-			clock.Start();
-			//Roulette roulette = new Roulette();
-			//board.RefreshHash();
+            Clock clock = new Clock();
+            clock.Start();
+            //Roulette roulette = new Roulette();
+            //board.RefreshHash();
 
-			int score = -MaxScore;
-			int eval;
-			//是否调用零窗口的标志
-			bool foundPv = false;
+            int score = -MaxScore;
+            int eval;
+            //是否调用零窗口的标志
+            bool foundPv = false;
 
-			var moves = rule.FindFlips(board, color).ToList();
+            var moves = rule.FindFlips(board, color).ToList();
 
-			if (moves.Count == 0) {
-				return new SearchResult() { Move = -1 };
-			}
+            if (moves.Count == 0)
+            {
+                moves = rule.FindFlips(board, opp).ToList();
 
-			for (int i = 0; i < moves.Count; i++) {
-				var pos = moves[i].Pos;
-				//下棋 
-				//---------------------------
-				int flipCount = board.MakeMove(pos, color);
+                if (moves.Count == 0)
+                {
+                    //END
+                    var endScore = EndEval(board, color);
 
-				searchResult.Nodes++;
-				//检测
-				if (foundPv) {
-					//调用零窗口
-					eval = -FastestFirstSolve(board, -alpha - 1, -alpha, depth - 1, searchResult, opp, color);
-					if ((eval > alpha) && (eval < beta)) {
-						eval = -FastestFirstSolve(board, -beta, -eval, depth - 1, searchResult, opp, color);
-						//eval = -FastestFirstMidSolve( -beta, -alpha, oppcolor, depth - 1);
-					}
-				}
-				else {
-					eval = -FastestFirstSolve(board, -beta, -alpha, depth - 1, searchResult, opp, color);
-				}
+                    return new SearchResult() { Move = -1, Score = endScore };
+                }
+                else
+                {
+                    var result = Search(board, opp, depth);
+                    result.Score = -result.Score;
 
-				//em.ReLink();
-				//---------------------------
-				//Eval.StepsPop(color);
-				//恢复到上一步
-				board.Reback(pos, flipCount, opp);
+                    return result;
+                }
+            }
+
+            for (int i = 0; i < moves.Count; i++)
+            {
+                var pos = moves[i].Pos;
+                //下棋 
+                //---------------------------
+                int flipCount = board.MakeMove(pos, color);
+
+                searchResult.Nodes++;
+                //检测
+                if (foundPv)
+                {
+                    //调用零窗口
+                    eval = -FastestFirstSolve(board, -alpha - 1, -alpha, depth - 1, searchResult, opp, color);
+                    if ((eval > alpha) && (eval < beta))
+                    {
+                        eval = -FastestFirstSolve(board, -beta, -eval, depth - 1, searchResult, opp, color);
+                        //eval = -FastestFirstMidSolve( -beta, -alpha, oppcolor, depth - 1);
+                    }
+                }
+                else
+                {
+                    eval = -FastestFirstSolve(board, -beta, -alpha, depth - 1, searchResult, opp, color);
+                }
+
+                //em.ReLink();
+                //---------------------------
+                //Eval.StepsPop(color);
+                //恢复到上一步
+                board.Reback(pos, flipCount, opp);
 
                 searchResult.EvalList.Add(new EvalItem { Move = pos, Score = eval });
 
-				searchResult.Message += string.Format("({0}:{1})", pos, eval);
-				if (eval > score) {
-					score = eval;
-					//更新位置
-					searchResult.Move = pos;
-					searchResult.Score = score;
+                searchResult.Message += string.Format("({0}:{1})", pos, eval);
+                if (eval > score)
+                {
+                    score = eval;
+                    //更新位置
+                    searchResult.Move = pos;
+                    searchResult.Score = score;
 
-					if (eval > alpha) {
-						if (eval >= beta) {
-							//剪枝
-							break;
-						}
-						alpha = eval;
-						foundPv = true;
-					}
-				}
-			}
+                    if (eval > alpha)
+                    {
+                        if (eval >= beta)
+                        {
+                            //剪枝
+                            break;
+                        }
+                        alpha = eval;
+                        foundPv = true;
+                    }
+                }
+            }
 
-			clock.Stop();
+            clock.Stop();
 
-			searchResult.TimeSpan = clock.Elapsed;
+            searchResult.TimeSpan = clock.Elapsed;
 
-			return searchResult;
-		}
+            return searchResult;
+        }
 
-		/// <summary>
-		/// 最快优先搜索
-		/// </summary> 
-		private int FastestFirstSolve(Board board, int alpha, int beta, int depth, SearchResult searchResult, int cur, int opp, bool prevmove = true) {
-			lock (this) {
-				//计算搜索的结点数
-				searchResult.Nodes++;
-				/*
+        /// <summary>
+        /// 最快优先搜索
+        /// </summary> 
+        private int FastestFirstSolve(Board board, int alpha, int beta, int depth, SearchResult searchResult, int cur, int opp, bool prevmove = true)
+        {
+            lock (this)
+            {
+                //计算搜索的结点数
+                searchResult.Nodes++;
+                /*
 				//尝试置换表裁剪，并得到置换表走法
 				HashResult hashResult = board.ReadHash(alpha, beta, depth);
 				if (hashResult != null) {
@@ -101,23 +129,25 @@ namespace TinyOthello.Engines {
 				}
 				*/
 
-				if (board.EmptyCount == 0) {//游戏结束
-					return EndEval(board,cur);
-				}
+                if (board.EmptyCount == 0)
+                {//游戏结束
+                    return EndEval(board, cur);
+                }
 
-				//叶子节点，局面估分
-				if (depth == 0) {
-					return Eval(board, cur);
-				}
+                //叶子节点，局面估分
+                if (depth == 0)
+                {
+                    return Eval(board, cur);
+                }
 
-				int mvBest = 0;
-				int score = -MaxScore;
-				//是否调用零窗口的标志
-				bool foundPv = false;
-				int eval;
+                int mvBest = 0;
+                int score = -MaxScore;
+                //是否调用零窗口的标志
+                bool foundPv = false;
+                int eval;
 
-				#region hash code
-				/*
+                #region hash code
+                /*
 				//int mvHash = hashResult.Move;
 				//初始化最佳值和最佳走法
 
@@ -175,75 +205,85 @@ namespace TinyOthello.Engines {
 				}
 				*/
 
-				#endregion
+                #endregion
 
-				var moves = rule.FindFlips(board, cur).ToList();
+                var moves = rule.FindFlips(board, cur).ToList();
 
-				if (moves.Count == 0) {
-					if (!prevmove) {//游戏结束
-						return EndEval(board,cur);
-						/*
+                if (moves.Count == 0)
+                {
+                    if (!prevmove)
+                    {//游戏结束
+                        return EndEval(board, cur);
+                        /*
 						if (discdiff > 0)//自己赢
 							return Constants.HighestScore;
 						if (discdiff < 0)//对方赢
 							return -Constants.HighestScore;
 						return 0;//平手
 					  */
-					}
-					else {
-						/* I pass: */
-						score = -FastestFirstSolve(board, -beta, -alpha, depth, searchResult, opp, cur, false);
-					}
+                    }
+                    else
+                    {
+                        /* I pass: */
+                        score = -FastestFirstSolve(board, -beta, -alpha, depth, searchResult, opp, cur, false);
+                    }
 
-					return score;
-				}
+                    return score;
+                }
 
-				for (int i = 0; i < moves.Count; i++) {
-					var pos = moves[i].Pos;
-					//下棋 
-					//---------------------------
-					int flipCount = board.MakeMove(pos, cur);
+                for (int i = 0; i < moves.Count; i++)
+                {
+                    var pos = moves[i].Pos;
+                    //下棋 
+                    //---------------------------
+                    int flipCount = board.MakeMove(pos, cur);
 
-					searchResult.Nodes++;
-					//检测
-					if (foundPv) {
-						//调用零窗口
-						eval = -FastestFirstSolve(board, -alpha - 1, -alpha, depth - 1, searchResult, opp, cur);
-						if ((eval > alpha) && (eval < beta)) {
-							eval = -FastestFirstSolve(board, -beta, -eval, depth - 1, searchResult, opp, cur);
-						}
-					}
-					else {
-						eval = -FastestFirstSolve(board, -beta, -alpha, depth - 1, searchResult, opp, cur);
-					}
+                    searchResult.Nodes++;
+                    //检测
+                    if (foundPv)
+                    {
+                        //调用零窗口
+                        eval = -FastestFirstSolve(board, -alpha - 1, -alpha, depth - 1, searchResult, opp, cur);
+                        if ((eval > alpha) && (eval < beta))
+                        {
+                            eval = -FastestFirstSolve(board, -beta, -eval, depth - 1, searchResult, opp, cur);
+                        }
+                    }
+                    else
+                    {
+                        eval = -FastestFirstSolve(board, -beta, -alpha, depth - 1, searchResult, opp, cur);
+                    }
 
-					//em.ReLink();
-					//---------------------------
-					//Eval.StepsPop(color);
-					//恢复到上一步
-					board.Reback(pos, flipCount, opp);
+                    //em.ReLink();
+                    //---------------------------
+                    //Eval.StepsPop(color);
+                    //恢复到上一步
+                    board.Reback(pos, flipCount, opp);
 
-					if (eval > score) {
-						score = eval;
-						//mvBest = sqnum;
+                    if (eval > score)
+                    {
+                        score = eval;
+                        //mvBest = sqnum;
 
-						if (eval > alpha) {
-							if (eval >= beta) {
-								//剪枝
-								return score;
-								//hashType = HashType.UPPER_BOUND;
-								//break;
-							}
-							//----------------
-							//hashType = HashType.EXACT;
+                        if (eval > alpha)
+                        {
+                            if (eval >= beta)
+                            {
+                                //剪枝
+                                return score;
+                                //hashType = HashType.UPPER_BOUND;
+                                //break;
+                            }
+                            //----------------
+                            //hashType = HashType.EXACT;
 
-							alpha = eval;
-							foundPv = true;
-						}
-					}
+                            alpha = eval;
+                            foundPv = true;
+                        }
+                    }
 
 
-					/*
+                    /*
 					// 记录到置换表
 					board.StoreHash(hashType, score, depth, mvBest);
 					if (mvBest != 0) {
@@ -251,17 +291,19 @@ namespace TinyOthello.Engines {
 						board.StoreBestMove(mvBest, depth);
 					}
 					 */
-				}
-				return score;
-			}
-		}
+                }
+                return score;
+            }
+        }
 
-		protected virtual int Eval(Board board, int color) {
-			return board.Eval(color);
-		}
+        protected virtual int Eval(Board board, int color)
+        {
+            return board.Eval(color);
+        }
 
-		protected virtual int EndEval(Board board, int color) {
-			return board.EndEval(color);
-		}
-	}
+        protected virtual int EndEval(Board board, int color)
+        {
+            return board.EndEval(color);
+        }
+    }
 }

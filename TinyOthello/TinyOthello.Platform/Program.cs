@@ -14,7 +14,7 @@ namespace TinyOthello.Platform {
         static void Main(string[] args)
         {
             //BoardTest();
-            // GameTest();
+             GameTest();
             //SelfFightTest();
             //Engine_Test();
             //FightTest();
@@ -24,25 +24,24 @@ namespace TinyOthello.Platform {
             //NeuralLearning_Test();
             //LoadNetwork_Test();
             //CalDelta_Test();
-
+ 
             /*
-0222021101101000*/
             foreach (var s in new[]{
-                "0222021101101000",
-                /*
+                "□○○○□○●●□●●□●□□□",
+                "0222021101101000",                
                 "□□□□□●○□●●●□□□□□",
                 "□○●□□○●□□○●□□□□□",
-                "□□□□□●○□●○●□○□□□"*/
+                "□□□□□●○□●○●□○□□□"
                 })
             {
                 //EndGame_Test(s, 11, color:StoneType.White);
                 //NeuralEngine_Test(s, 13);
                 MCTSEngine_Test(s, 11, color:StoneType.White);
-            }
-            
+            }*/
+
             //CreateKnowledge_Test();
             //BitBoard_Test();
-
+            
             Console.WriteLine("press any keys to exit...");
             Console.Read();
         }
